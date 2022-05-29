@@ -26,8 +26,6 @@ from . import fourCC
 from . import gpmf
 from . import gpshelper
 
-# global variable set limit of valid speed 
-max_limit = 3.0
 
 def BuildGPSPoints(data, skip=False):
     """
@@ -43,6 +41,7 @@ def BuildGPSPoints(data, skip=False):
     points = []
     SCAL = fourCC.XYZData(1.0, 1.0, 1.0)
     GPSU = None
+    GPSP = None
     SYST = fourCC.SYSTData(0, 0)
 
     stats = {
@@ -59,6 +58,9 @@ def BuildGPSPoints(data, skip=False):
             SCAL = d.data
         elif d.fourCC == 'GPSU':
             GPSU = d.data
+        elif d.fourCC == 'GPSP':
+            GPSP = d.data
+            #print(GPSP)
         elif d.fourCC == 'GPSF':
             if d.data != GPSFIX:
                 print("GPSFIX change to %s [%s]" % (d.data,fourCC.LabelGPSF.xlate[d.data]))
@@ -84,7 +86,8 @@ def BuildGPSPoints(data, skip=False):
                 
 
                 gpsdata = fourCC.GPSData._make(retdata)
-                p = gpshelper.GPSPoint(gpsdata.lat, gpsdata.lon, gpsdata.alt, GPSU, gpsdata.speed)
+                #p = gpshelper.GPSPoint(gpsdata.lat, gpsdata.lon, gpsdata.alt, GPSU, gpsdata.speed)
+                p = gpshelper.GPSPoint(gpsdata.lat, gpsdata.lon, gpsdata.alt, GPSU, GPSP, gpsdata.speed)
                 points.append(p)
                 stats['ok'] += 1
 
@@ -113,7 +116,8 @@ def BuildGPSPoints(data, skip=False):
             gpsdata = fourCC.KARMAGPSData._make(data)
 
             if SYST.seconds != 0 and SYST.miliseconds != 0:
-                p = gpshelper.GPSPoint(gpsdata.lat, gpsdata.lon, gpsdata.alt, datetime.fromtimestamp(SYST.miliseconds), gpsdata.speed)
+                #p = gpshelper.GPSPoint(gpsdata.lat, gpsdata.lon, gpsdata.alt, datetime.fromtimestamp(SYST.miliseconds), gpsdata.speed)
+                p = gpshelper.GPSPoint(gpsdata.lat, gpsdata.lon, gpsdata.alt, datetime.fromtimestamp(SYST.miliseconds), GPSP, gpsdata.speed)
                 points.append(p)
                 stats['ok'] += 1
 
@@ -121,7 +125,7 @@ def BuildGPSPoints(data, skip=False):
 
 
     print("-- stats -----------------")
-    total_points =0
+    total_points = 0
     for i in stats.keys():
         total_points += stats[i]
     print("- Ok:              %5d" % stats['ok'])
@@ -140,6 +144,7 @@ def parseArgs():
     parser.add_argument("outputfile", help="output file. builds KML and GPX")
     parser.add_argument("max_limits", help="maximum valid speed in m/s or kmh")
     parser.add_argument("unit", help="m/s or kmh")
+    parser.add_argument("max_precision", help="maximum precision")
     args = parser.parse_args()
     
     return args
@@ -147,11 +152,13 @@ def parseArgs():
 def main():
     args = parseArgs()
     
-    global max_limit 
+    global max_limit
+    global max_precision 
     if args.unit == "kmh":
         max_limit = round(float(args.max_limits)/3.6, 2)
     else:
         max_limit = round(float(args.max_limits),2)
+    max_precision = round(float(args.max_precision),0)
         
     config = setup_environment(args)
     parser = gpmf.Parser(config)
@@ -169,13 +176,15 @@ def main():
         print("Can't create file. No GPS info in %s. Exitting" % args.file)
         sys.exit(0)
 
-    kml = gpshelper.generate_KML(points)
+    kml = gpshelper.generate_KML(max_precision, max_limit, points)
     with open("%s.kml" % args.outputfile , "w+") as fd:
         fd.write(kml)
+    print("KML file sucessfully created")
 
-    gpx = gpshelper.generate_GPX(max_limit, points, trk_name="gopro7-track")
+    gpx = gpshelper.generate_GPX(max_precision, max_limit, points, trk_name="gopro7-track")
     with open("%s.gpx" % args.outputfile , "w+") as fd:
         fd.write(gpx)
+    print("GPX file sucessfully created")
 
 if __name__ == "__main__":
     main()

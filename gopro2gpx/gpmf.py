@@ -40,8 +40,8 @@ class Parser:
         if not os.path.exists(self.file):
             raise FileNotFoundError("Can't open %s" % self.file)
 
-        print("selfile: ")
-        print(self.file)
+        #print("selfile: ")
+        #print(self.file)
         track_number, lineinfo = self.ffmtools.getMetadataTrack(self.file)
 
         if not track_number:

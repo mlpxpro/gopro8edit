@@ -12,11 +12,12 @@ import time
 import os
 
 class GPSPoint:
-    def __init__(self, latitude=0.0, longitude=0.0, elevation=0.0, time=datetime.fromtimestamp(time.time()), speed=0.0):
+    def __init__(self, latitude=0.0, longitude=0.0, elevation=0.0, time=datetime.fromtimestamp(time.time()), precision=0.0, speed=0.0):
         self.latitude = latitude
         self.longitude = longitude
         self.elevation = elevation
         self.time = time
+        self.precision = precision
         self.speed = speed
         # extensions
         self.hr = 0
@@ -38,7 +39,7 @@ def UTCTime(timedata):
     
     return timedata.strftime("%Y-%m-%dT%H:%M:%SZ")
 
-def generate_GPX(max_limit, points, trk_name="exercise"):
+def generate_GPX(max_precision, max_limit, points, trk_name="exercise"):
     
     """
     Creates a GPX in 1.1 Format
@@ -97,6 +98,7 @@ def generate_GPX(max_limit, points, trk_name="exercise"):
         cadence = p.cad
         speed = p.speed
         distance = p.distance
+        precision = p.precision
 
         pts  = '	<trkpt lat="%s" lon="%s">\r\n' % (p.latitude, p.longitude)
         pts += '		<ele>%s</ele>\r\n' % p.elevation
@@ -115,10 +117,13 @@ def generate_GPX(max_limit, points, trk_name="exercise"):
         pts += '	</trkpt>\r\n'
 
         if speed <= max_limit:
-            xml += pts
-        else:
+            if precision <= max_precision:
+                xml += pts
+                speedkmh = speed * 3.6
+                print("add GPX speed under than limit: ", max_limit, "m/s - speed : ", speedkmh,"km/h", "precision under limit: ", max_precision, " - precision: ",precision)   
+        elif precision > max_precision:
             speedkmh = speed * 3.6
-            print("speed more than limit: ", max_limit, "m/s - speed : ", speedkmh,"km/h")
+            #print("speed more than limit: ", max_limit, "m/s - speed : ", speedkmh,"km/h", "precision over limit: ", max_precision, " - precision: ",precision)
 
     xml += "</trkseg>\r\n"
     xml += "</trk>\r\n"
@@ -128,7 +133,7 @@ def generate_GPX(max_limit, points, trk_name="exercise"):
 
 
 
-def generate_KML(gps_points):
+def generate_KML(max_precision, max_limit, gps_points):
     """
     
     use this for color
@@ -169,8 +174,21 @@ def generate_KML(gps_points):
     
     lines = []
     for p in gps_points:
+        speed = p.speed
+        precision = p.precision
         s = "%s,%s,%s" % (p.longitude, p.latitude, p.elevation)
-        lines.append(s)
+        
+        if speed <= max_limit:
+            if precision <= max_precision:
+                lines.append(s)
+                speedkmh = speed * 3.6
+                print("add KML speed under than limit: ", max_limit, "m/s - speed : ", speedkmh,"km/h", "precision under limit: ", max_precision, " - precision: ",precision)   
+        elif precision > max_precision:
+            speedkmh = speed * 3.6
+            #print("speed more than limit: ", max_limit, "m/s - speed : ", speedkmh,"km/h", "precision over limit: ", max_precision, " - precision: ",precision)
+
+        
+        
 
     coords = os.linesep.join(lines)
     kml = kml_template % coords
