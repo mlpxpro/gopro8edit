@@ -193,3 +193,42 @@ def generate_KML(max_precision, max_limit, gps_points):
     coords = os.linesep.join(lines)
     kml = kml_template % coords
     return(kml)
+
+def generate_CSV(max_precision, max_limit, points, trk_name="exercise"):
+    
+    csv  = 'csv data'
+   
+    csv += "<csv\r\n"
+
+    #csv += "  <time>%s</time>\r\n" % UTCTime(points[0].time) # first point !
+    
+    for p in points:
+        hr = p.hr
+        cadence = p.cad
+        speed = p.speed
+        distance = p.distance
+        precision = p.precision
+        elevation = p.elevation
+        temperature = p.temperature
+
+        pts = 'time>%s;' % UTCTime(p.time)
+        pts += 'lat>%s;lon>%s;' % (p.latitude, p.longitude)
+        pts += 'elev>%s;' % elevation
+        pts += 'hr>%s;' % hr
+        pts += 'cadence>%s;' % cadence
+        pts += 'speed>%s;' % speed
+        pts += 'distance>%s;' % distance
+        pts += 'precision>%s;' % precision
+        pts += 'temp>%s;\r\n'  % temperature
+
+
+        if speed <= max_limit:
+            if precision <= max_precision:
+                csv += pts
+                speedkmh = speed * 3.6
+                print("add GPX speed under than limit: ", max_limit, "m/s - speed : ", speedkmh,"km/h", "precision under limit: ", max_precision, " - precision: ",precision)   
+        elif precision > max_precision:
+            speedkmh = speed * 3.6
+            #print("speed more than limit: ", max_limit, "m/s - speed : ", speedkmh,"km/h", "precision over limit: ", max_precision, " - precision: ",precision)
+
+    return csv

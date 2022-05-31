@@ -185,6 +185,11 @@ def main():
     with open("%s.gpx" % args.outputfile , "w+") as fd:
         fd.write(gpx)
     print("GPX file sucessfully created")
+    
+    csv = gpshelper.generate_CSV(max_precision, max_limit, points, trk_name="gopro7-track")
+    with open("%s.csv" % args.outputfile , "w+") as fd:
+        fd.write(csv)
+    print("CSV file sucessfully created")
 
 if __name__ == "__main__":
     main()
